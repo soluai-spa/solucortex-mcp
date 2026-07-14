@@ -6,7 +6,7 @@ record memories when it closes. The client acts as an *authorized agent* (Bearer
 so memories it creates are stored approved and traced automatically.
 
 Configuration (environment variables):
-  SOLUCORTEX_URL         Base URL. Default: https://solucortex.soluai.cl
+  SOLUCORTEX_URL         Base URL. Default: https://solucortex.ai
   SOLUCORTEX_API_KEY     Project API key (prefix scx_). REQUIRED.
   SOLUCORTEX_PROJECT_ID  Default project UUID. Can be overridden per call.
 
@@ -22,7 +22,7 @@ import httpx
 from mcp.server.fastmcp import FastMCP
 from pydantic import Field
 
-DEFAULT_URL = "https://solucortex.soluai.cl"
+DEFAULT_URL = "https://solucortex.ai"
 NORMAL_TIMEOUT = 30.0
 # Endpoints backed by OpenAI embeddings have a reduced rate limit (20 req/min) and are slower.
 OPENAI_TIMEOUT = 60.0

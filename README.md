@@ -30,7 +30,7 @@ The server is configured entirely through environment variables:
 |----------|----------|-------------|
 | `SOLUCORTEX_API_KEY` | ✅ | Project API key (`scx_…`) |
 | `SOLUCORTEX_PROJECT_ID` | recommended | Default project UUID (can be overridden per call) |
-| `SOLUCORTEX_URL` | optional | API base URL. Default `https://solucortex.soluai.cl` |
+| `SOLUCORTEX_URL` | optional | API base URL. Default `https://solucortex.ai` |
 
 Never commit your API key. Keep it in your MCP client config's `env` block or a local `.env`
 (see [`.env.example`](.env.example)).
