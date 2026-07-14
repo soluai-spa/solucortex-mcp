@@ -1,0 +1,14 @@
+.git
+.gitignore
+.env
+*.env
+!.env.example
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+dist/
+build/
+*.egg-info/
+.idea/
+.vscode/
