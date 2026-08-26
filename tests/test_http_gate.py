@@ -21,6 +21,30 @@ def test_mcp_endpoint_with_malformed_auth_is_401(http_server):
     assert resp.status_code == 401
 
 
+def test_public_host_header_is_accepted(http_server):
+    # Regression (Cloud Run): newer SDKs enable DNS-rebinding protection with a localhost
+    # allowlist and 421-reject public Hosts. We disable it — this must never return 421.
+    resp = httpx.post(
+        f"{http_server}/mcp",
+        json={
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {
+                "protocolVersion": "2025-03-26",
+                "capabilities": {},
+                "clientInfo": {"name": "t", "version": "0"},
+            },
+        },
+        headers={
+            "Authorization": "Bearer scx_test",
+            "Accept": "application/json, text/event-stream",
+            "Host": "mcp.solucortex.ai",
+        },
+    )
+    assert resp.status_code == 200
+
+
 def test_mcp_endpoint_with_key_passes_the_gate(http_server):
     # Invalid MCP payload on purpose: anything but 401 proves the auth gate let it through.
     resp = httpx.post(

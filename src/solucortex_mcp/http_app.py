@@ -17,6 +17,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
+from mcp.server.transport_security import TransportSecuritySettings
 from starlette.datastructures import Headers
 from starlette.types import ASGIApp, Receive, Scope, Send
 
@@ -92,4 +93,10 @@ def build_http_app() -> ASGIApp:
     # Stateless is required for multi-tenancy: a persistent session task would be created
     # under the first caller's context and serve later callers with the wrong credentials.
     server.mcp.settings.stateless_http = True
+    # DNS-rebinding protection is meant for localhost servers; newer SDKs enable it with a
+    # localhost allowlist, which 421-rejects public Hosts (*.run.app, mcp.solucortex.ai).
+    # This is a public service: auth is the per-request Bearer key, not the Host header.
+    server.mcp.settings.transport_security = TransportSecuritySettings(
+        enable_dns_rebinding_protection=False
+    )
     return CredentialsMiddleware(server.mcp.streamable_http_app())
