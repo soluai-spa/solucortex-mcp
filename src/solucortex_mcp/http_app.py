@@ -23,7 +23,9 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 
 from . import server
 
-HEALTH_PATHS = {"/healthz", "/healthz/"}
+# /health is the public path: Google's frontend intercepts /healthz on Cloud Run and
+# answers its own 404 before the request reaches the container. /healthz kept for local use.
+HEALTH_PATHS = {"/health", "/health/", "/healthz", "/healthz/"}
 PROJECT_HEADER = "x-solucortex-project"
 
 

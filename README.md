@@ -45,7 +45,7 @@ Run with `MCP_TRANSPORT=http` (or `--http`) to serve Streamable HTTP on `$PORT`
 | `Authorization: Bearer scx_…` | ✅ | The caller's project API key (401 without it) |
 | `X-Solucortex-Project` | recommended | Default project UUID for the session |
 
-`GET /healthz` responds without auth (for Cloud Run health checks). The MCP endpoint is
+`GET /health` (and `/healthz` locally; Cloud Run's frontend intercepts `/healthz`) responds without auth. The MCP endpoint is
 `/mcp`, runs stateless, and shares nothing between requests/tenants.
 
 Never commit your API key. Keep it in your MCP client config's `env` block or a local `.env`

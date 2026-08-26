@@ -41,7 +41,7 @@ gcloud run deploy "${SERVICE}" \
 
 URL=$(gcloud run services describe "${SERVICE}" --project "${PROJECT}" --region "${REGION}" --format='value(status.url)')
 echo ">> Smoke test ${URL}"
-curl -fsS "${URL}/healthz" && echo " <- healthz OK"
+curl -fsS "${URL}/health" && echo " <- health OK"
 code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "${URL}/mcp" -d '{}')
 [ "${code}" = "401" ] && echo "401 sin key OK" || { echo "ERROR: se esperaba 401 sin key, llegó ${code}"; exit 1; }
 echo ">> Listo: ${URL}"

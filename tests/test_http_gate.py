@@ -3,10 +3,12 @@
 import httpx
 
 
-def test_healthz_needs_no_auth(http_server):
-    resp = httpx.get(f"{http_server}/healthz")
-    assert resp.status_code == 200
-    assert resp.json()["status"] == "ok"
+def test_health_needs_no_auth(http_server):
+    # /health is the public path (Cloud Run's frontend intercepts /healthz); both work.
+    for path in ("/health", "/healthz"):
+        resp = httpx.get(f"{http_server}{path}")
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "ok"
 
 
 def test_mcp_endpoint_without_key_is_401(http_server):
