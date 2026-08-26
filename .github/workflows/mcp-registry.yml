@@ -1,0 +1,28 @@
+name: Publish to MCP Registry
+
+# Authenticates as this repo via GitHub Actions OIDC — grants the io.github.soluai-spa
+# namespace without depending on user org-membership checks (registry issue #1537).
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - server.json
+      - .github/workflows/mcp-registry.yml
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install mcp-publisher
+        run: |
+          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
+          sudo mv mcp-publisher /usr/local/bin/
+      - name: Login (GitHub OIDC)
+        run: mcp-publisher login github-oidc
+      - name: Publish
+        run: mcp-publisher publish
