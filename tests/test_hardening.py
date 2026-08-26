@@ -29,10 +29,24 @@ def test_oversized_payload_is_413(http_server):
     assert "Payload too large" in resp.json()["error"]
 
 
+class _ListHandler(logging.Handler):
+    def __init__(self):
+        super().__init__()
+        self.messages: list[str] = []
+
+    def emit(self, record):
+        self.messages.append(record.getMessage())
+
+
 @pytest.mark.anyio
-async def test_logs_never_contain_the_api_key(http_server, fake_backend, caplog):
+async def test_logs_never_contain_the_api_key(http_server, fake_backend):
+    # Our loggers don't propagate (they own a plain-JSON handler), so attach directly.
+    capture = _ListHandler()
+    loggers = [logging.getLogger(n) for n in ("solucortex_mcp.access", "solucortex_mcp.backend")]
+    for lg in loggers:
+        lg.addHandler(capture)
     secret = "scx_super_secret_key_do_not_log"
-    with caplog.at_level(logging.INFO):
+    try:
         async with streamablehttp_client(
             f"{http_server}/mcp",
             headers={"Authorization": f"Bearer {secret}", "X-Solucortex-Project": "p-1"},
@@ -40,8 +54,11 @@ async def test_logs_never_contain_the_api_key(http_server, fake_backend, caplog)
             async with ClientSession(read, write) as session:
                 await session.initialize()
                 await session.call_tool("solucortex_list_memories", {"limit": 1})
+    finally:
+        for lg in loggers:
+            lg.removeHandler(capture)
 
-    text = "\n".join(r.getMessage() for r in caplog.records)
+    text = "\n".join(capture.messages)
     assert secret not in text
     assert _key_fingerprint(secret) in text  # traceable without being reversible
     assert '"type": "backend_call"' in text

@@ -39,6 +39,22 @@ MAX_BODY_BYTES = 1_000_000
 access_log = logging.getLogger("solucortex_mcp.access")
 
 
+def _configure_json_logging() -> None:
+    """Emit our structured lines as plain one-line JSON on stderr.
+
+    Without this they propagate to the root logger, where the SDK's rich handler wraps
+    and columnizes them — breaking one-line-JSON parsing in Cloud Logging.
+    """
+    for name in ("solucortex_mcp.access", "solucortex_mcp.backend"):
+        lg = logging.getLogger(name)
+        lg.setLevel(logging.INFO)
+        lg.propagate = False
+        if not lg.handlers:
+            handler = logging.StreamHandler()
+            handler.setFormatter(logging.Formatter("%(message)s"))
+            lg.addHandler(handler)
+
+
 async def _send_json(
     send: Send,
     status: int,
@@ -142,6 +158,7 @@ class CredentialsMiddleware:
 
 def build_http_app() -> ASGIApp:
     """Build the ASGI app for the remote mode (MCP endpoint at /mcp, health at /health)."""
+    _configure_json_logging()
     server.enable_http_mode()
     # Stateless is required for multi-tenancy: a persistent session task would be created
     # under the first caller's context and serve later callers with the wrong credentials.
