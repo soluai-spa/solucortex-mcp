@@ -21,8 +21,12 @@ Never hardcode the API key: it is read from the environment (stdio) or the reque
 from __future__ import annotations
 
 import contextvars
+import hashlib
+import json
+import logging
 import os
 import sys
+import time
 from typing import Annotated, Any
 
 import httpx
@@ -35,6 +39,15 @@ NORMAL_TIMEOUT = 30.0
 OPENAI_TIMEOUT = 60.0
 
 mcp = FastMCP("solucortex")
+
+# Structured backend-call log. Goes to stderr (safe in stdio mode, where stdout carries
+# the MCP protocol) and is captured as structured output by Cloud Run in http mode.
+backend_log = logging.getLogger("solucortex_mcp.backend")
+
+
+def _key_fingerprint(key: str) -> str:
+    """Non-reversible short identifier for a key, safe to log. NEVER log the key itself."""
+    return hashlib.sha256(key.encode()).hexdigest()[:12]
 
 
 # --- Credential resolution ---------------------------------------------------
@@ -115,20 +128,36 @@ async def _request(
         return {"ok": False, "error": cfg}
 
     url = f"{_base_url()}/api/v1{path}"
+    api_key = _api_key() or ""
     headers = {
-        "Authorization": f"Bearer {_api_key()}",
+        "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
         "Accept": "application/json",
     }
+
+    def _log_call(status: int | str) -> None:
+        backend_log.info(json.dumps({
+            "type": "backend_call",
+            "method": method,
+            "path": path,
+            "status": status,
+            "dur_ms": round((time.monotonic() - started) * 1000, 1),
+            "key_fp": _key_fingerprint(api_key),
+        }))
+
+    started = time.monotonic()
     try:
         async with httpx.AsyncClient(timeout=timeout) as client:
             resp = await client.request(
                 method, url, headers=headers, json=json_body, params=params
             )
     except httpx.TimeoutException:
+        _log_call("timeout")
         return {"ok": False, "error": f"Timeout calling {method} {path} (>{timeout}s)."}
     except httpx.HTTPError as exc:
+        _log_call("network_error")
         return {"ok": False, "error": f"Network error calling {method} {path}: {exc}"}
+    _log_call(resp.status_code)
 
     try:
         payload: Any = resp.json()
@@ -140,7 +169,11 @@ async def _request(
 
     hint = ""
     if resp.status_code == 401:
-        hint = " (Invalid or missing API key: check SOLUCORTEX_API_KEY.)"
+        hint = (
+            " (Invalid API key: check the 'Authorization: Bearer' header value.)"
+            if _http_mode
+            else " (Invalid or missing API key: check SOLUCORTEX_API_KEY.)"
+        )
     elif resp.status_code == 403:
         hint = " (No access to this project: ensure the API key matches project_id.)"
     elif resp.status_code == 422:
