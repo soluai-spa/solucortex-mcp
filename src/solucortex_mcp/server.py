@@ -117,16 +117,6 @@ def _resolve_project_id(project_id: str | None) -> str | None:
     return os.environ.get("SOLUCORTEX_PROJECT_ID")
 
 
-def _missing_project_error() -> dict[str, Any]:
-    if _http_mode:
-        return {
-            "ok": False,
-            "error": "Missing project_id: pass it as an argument or send the "
-            "X-Solucortex-Project header with your default project UUID.",
-        }
-    return {"ok": False, "error": "Missing project_id (neither argument nor SOLUCORTEX_PROJECT_ID)."}
-
-
 def _config_error() -> str | None:
     """Return an actionable message if configuration is missing, else None."""
     if _api_key():
@@ -235,7 +225,7 @@ async def solucortex_recall(
     ],
     project_id: Annotated[
         str | None,
-        Field(description="Project UUID. If omitted, uses SOLUCORTEX_PROJECT_ID."),
+        Field(description="Project UUID. If omitted, the session default applies, else the backend infers it from the API key."),
     ] = None,
 ) -> dict[str, Any]:
     """Build living context for a task (POST /context/build).
@@ -243,14 +233,10 @@ async def solucortex_recall(
     Call this at the START of a task, before touching code: returns approved, active
     memories (decisions, conventions, risks, sensitive modules, architecture) ranked by
     semantic similarity + importance. Uses OpenAI embeddings (slower, 20 req/min)."""
-    pid = _resolve_project_id(project_id)
-    if not pid:
-        return _missing_project_error()
-    return await _request(
-        "POST", "/context/build",
-        json_body={"project_id": pid, "query": query},
-        timeout=OPENAI_TIMEOUT,
-    )
+    body: dict[str, Any] = {"query": query}
+    if pid := _resolve_project_id(project_id):
+        body["project_id"] = pid  # else the backend infers it from the API key
+    return await _request("POST", "/context/build", json_body=body, timeout=OPENAI_TIMEOUT)
 
 
 @mcp.tool(
@@ -264,7 +250,7 @@ async def solucortex_search(
     query: Annotated[str, Field(description="Question or topic to search across the project's memories.")],
     limit: Annotated[int, Field(description="Max memories to return.", ge=1, le=50)] = 10,
     project_id: Annotated[
-        str | None, Field(description="Project UUID. If omitted, uses SOLUCORTEX_PROJECT_ID.")
+        str | None, Field(description="Project UUID. If omitted, the session default applies, else the backend infers it from the API key.")
     ] = None,
 ) -> dict[str, Any]:
     """Ad-hoc semantic search of memories (POST /search/semantic).
@@ -272,14 +258,10 @@ async def solucortex_search(
     Use for specific questions during a task (e.g. 'how is authentication implemented?'),
     distinct from recall which builds the full startup context. Uses OpenAI embeddings
     (20 req/min)."""
-    pid = _resolve_project_id(project_id)
-    if not pid:
-        return _missing_project_error()
-    return await _request(
-        "POST", "/search/semantic",
-        json_body={"project_id": pid, "query": query, "limit": limit},
-        timeout=OPENAI_TIMEOUT,
-    )
+    body: dict[str, Any] = {"query": query, "limit": limit}
+    if pid := _resolve_project_id(project_id):
+        body["project_id"] = pid  # else the backend infers it from the API key
+    return await _request("POST", "/search/semantic", json_body=body, timeout=OPENAI_TIMEOUT)
 
 
 @mcp.tool(
@@ -312,7 +294,7 @@ async def solucortex_remember(
               "10 critical.", ge=1, le=10),
     ] = 5,
     project_id: Annotated[
-        str | None, Field(description="Project UUID. If omitted, uses SOLUCORTEX_PROJECT_ID.")
+        str | None, Field(description="Project UUID. If omitted, the session default applies, else the backend infers it from the API key.")
     ] = None,
 ) -> dict[str, Any]:
     """Record a memory in SoluCortex (POST /memories).
@@ -321,19 +303,15 @@ async def solucortex_remember(
     agent (Bearer api_key), the memory is stored with status 'approved' and traced. Never
     store real secrets: if you find one, record location/type/severity and action taken,
     with a redacted reference."""
-    pid = _resolve_project_id(project_id)
-    if not pid:
-        return _missing_project_error()
-    return await _request(
-        "POST", "/memories",
-        json_body={
-            "project_id": pid,
-            "type": type,
-            "title": title,
-            "content": content,
-            "importance": importance,
-        },
-    )
+    body: dict[str, Any] = {
+        "type": type,
+        "title": title,
+        "content": content,
+        "importance": importance,
+    }
+    if pid := _resolve_project_id(project_id):
+        body["project_id"] = pid  # else the backend infers it from the API key
+    return await _request("POST", "/memories", json_body=body)
 
 
 @mcp.tool(
@@ -346,7 +324,7 @@ async def solucortex_remember(
 async def solucortex_list_memories(
     limit: Annotated[int, Field(description="Max memories to return.", ge=1, le=100)] = 20,
     project_id: Annotated[
-        str | None, Field(description="Project UUID. If omitted, uses SOLUCORTEX_PROJECT_ID.")
+        str | None, Field(description="Project UUID. If omitted, the session default applies, else the backend infers it from the API key.")
     ] = None,
 ) -> dict[str, Any]:
     """List the project's memories without semantic search (GET /memories).

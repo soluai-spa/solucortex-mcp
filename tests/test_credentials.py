@@ -23,9 +23,6 @@ class TestStdioMode:
         monkeypatch.delenv("SOLUCORTEX_API_KEY", raising=False)
         assert "SOLUCORTEX_API_KEY" in server._config_error()
 
-    def test_missing_project_error_mentions_env_var(self, stdio_mode):
-        assert "SOLUCORTEX_PROJECT_ID" in server._missing_project_error()["error"]
-
 
 class TestHttpMode:
     def test_env_api_key_is_ignored(self, http_mode, monkeypatch):
@@ -60,6 +57,3 @@ class TestHttpMode:
 
     def test_config_error_mentions_authorization_header(self, http_mode):
         assert "Authorization: Bearer" in server._config_error()
-
-    def test_missing_project_error_mentions_header(self, http_mode):
-        assert "X-Solucortex-Project" in server._missing_project_error()["error"]

@@ -71,3 +71,26 @@ async def test_healthz_open(http_server):
     async with httpx.AsyncClient() as client:
         resp = await client.get(f"{http_server}/healthz")
     assert resp.status_code == 200
+
+
+@pytest.mark.anyio
+async def test_without_project_id_the_backend_infers_it(http_server, fake_backend):
+    # SCX-MCP-14: sin X-Solucortex-Project ni argumento, la tool NO envia project_id
+    # y el backend lo infiere desde la API key.
+    async with streamablehttp_client(
+        f"{http_server}/mcp", headers={"Authorization": "Bearer scx_tenant_c"}
+    ) as (read, write, _):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            result = await session.call_tool("solucortex_list_memories", {"limit": 2})
+            assert result.isError is False
+            result2 = await session.call_tool(
+                "solucortex_search", {"query": "auth", "limit": 3}
+            )
+            assert result2.isError is False
+
+    list_call = fake_backend.captured[-2]
+    assert "project_id" not in (list_call["params"] or {})
+    search_call = fake_backend.captured[-1]
+    assert "project_id" not in (search_call["json"] or {})
+    assert search_call["headers"]["Authorization"] == "Bearer scx_tenant_c"

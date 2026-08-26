@@ -31,7 +31,7 @@ The server is configured entirely through environment variables:
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `SOLUCORTEX_API_KEY` | ✅ | Project API key (`scx_…`) |
-| `SOLUCORTEX_PROJECT_ID` | recommended | Default project UUID (can be overridden per call) |
+| `SOLUCORTEX_PROJECT_ID` | optional | Default project UUID; if omitted, the backend infers it from the API key |
 | `SOLUCORTEX_URL` | optional | API base URL. Default `https://solucortex.ai` |
 
 ### HTTP mode (remote, multi-tenant)
@@ -43,7 +43,7 @@ Run with `MCP_TRANSPORT=http` (or `--http`) to serve Streamable HTTP on `$PORT`
 | Header | Required | Description |
 |--------|----------|-------------|
 | `Authorization: Bearer scx_…` | ✅ | The caller's project API key (401 without it) |
-| `X-Solucortex-Project` | recommended | Default project UUID for the session |
+| `X-Solucortex-Project` | optional | Default project UUID; if omitted, the backend infers it from the API key |
 
 `GET /health` (and `/healthz` locally; Cloud Run's frontend intercepts `/healthz`) responds without auth. The MCP endpoint is
 `/mcp`, runs stateless, and shares nothing between requests/tenants.
