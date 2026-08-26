@@ -3,6 +3,8 @@ name: Publish to PyPI
 # Trusted Publishing (OIDC): no tokens stored anywhere. Requires the PyPI project
 # "solucortex-mcp" to have this repo+workflow configured as a trusted publisher.
 on:
+  push:
+    tags: ["v*"]
   release:
     types: [published]
 
