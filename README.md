@@ -9,6 +9,12 @@ Connect any MCP-compatible agent (Claude Code, Claude Desktop, Cursor, Codex, Cl
 your SoluCortex project so it can **recall** the decisions, conventions, risks and architecture
 that matter before it works, and **remember** what it learns when it's done.
 
+**Website:** [solucortex.ai](https://solucortex.ai) ·
+**Setup guide:** [solucortex.ai/docs/mcp](https://solucortex.ai/docs/mcp) ·
+**Tools reference:** [solucortex.ai/docs/mcp-tools](https://solucortex.ai/docs/mcp-tools) ·
+**PyPI:** [solucortex-mcp](https://pypi.org/project/solucortex-mcp/) ·
+**MCP Registry:** `io.github.soluai-spa/solucortex-mcp`
+
 ## Tools
 
 | Tool | What it does | When to use |
