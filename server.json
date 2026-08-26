@@ -1,7 +1,7 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.soluai-spa/solucortex-mcp",
-  "description": "Living technical memory for AI agents: recall your project's approved decisions, conventions and risks at task start, and record what was learned at close. Official SoluCortex connector.",
+  "description": "Living technical memory for AI agents: recall approved project context, record what was learned.",
   "repository": {
     "url": "https://github.com/soluai-spa/solucortex-mcp",
     "source": "github"
