@@ -2,6 +2,11 @@
 
 <!-- mcp-name: io.github.soluai-spa/solucortex-mcp -->
 
+[![PyPI](https://img.shields.io/pypi/v/solucortex-mcp)](https://pypi.org/project/solucortex-mcp/)
+[![CI](https://github.com/soluai-spa/solucortex-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/soluai-spa/solucortex-mcp/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/pypi/pyversions/solucortex-mcp)](https://pypi.org/project/solucortex-mcp/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 Official [Model Context Protocol](https://modelcontextprotocol.io) server for
 **[SoluCortex](https://solucortex.ai)** — living technical memory for AI agents.
 
@@ -14,6 +19,8 @@ that matter before it works, and **remember** what it learns when it's done.
 **Tools reference:** [solucortex.ai/docs/mcp-tools](https://solucortex.ai/docs/mcp-tools) ·
 **PyPI:** [solucortex-mcp](https://pypi.org/project/solucortex-mcp/) ·
 **MCP Registry:** `io.github.soluai-spa/solucortex-mcp`
+
+<p align="center"><img src="docs/demo.gif" alt="SoluCortex MCP demo: recall approved context at task start, remember learnings at close" width="760"></p>
 
 ## Tools
 
