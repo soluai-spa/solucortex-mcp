@@ -1,5 +1,7 @@
 # SoluCortex MCP
 
+<!-- mcp-name: io.github.soluai-spa/solucortex-mcp -->
+
 Official [Model Context Protocol](https://modelcontextprotocol.io) server for
 **[SoluCortex](https://solucortex.ai)** — living technical memory for AI agents.
 

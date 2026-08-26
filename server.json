@@ -1,0 +1,54 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.soluai-spa/solucortex-mcp",
+  "description": "Living technical memory for AI agents: recall your project's approved decisions, conventions and risks at task start, and record what was learned at close. Official SoluCortex connector.",
+  "repository": {
+    "url": "https://github.com/soluai-spa/solucortex-mcp",
+    "source": "github"
+  },
+  "version": "1.0.0",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "solucortex-mcp",
+      "version": "1.0.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "SOLUCORTEX_API_KEY",
+          "description": "SoluCortex project API key (scx_...). Get one at https://solucortex.ai.",
+          "isRequired": true,
+          "isSecret": true
+        },
+        {
+          "name": "SOLUCORTEX_PROJECT_ID",
+          "description": "Default project UUID. Optional: the backend infers it from the API key.",
+          "isRequired": false,
+          "isSecret": false
+        }
+      ]
+    }
+  ],
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://mcp.solucortex.ai/mcp",
+      "headers": [
+        {
+          "name": "Authorization",
+          "description": "Bearer <your SoluCortex project API key (scx_...)>. Get one at https://solucortex.ai.",
+          "isRequired": true,
+          "isSecret": true
+        },
+        {
+          "name": "X-Solucortex-Project",
+          "description": "Default project UUID. Optional: the backend infers it from the API key.",
+          "isRequired": false,
+          "isSecret": false
+        }
+      ]
+    }
+  ]
+}
