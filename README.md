@@ -89,10 +89,8 @@ Or in any client with remote MCP support:
 claude mcp add solucortex \
   -e SOLUCORTEX_API_KEY=scx_xxx \
   -e SOLUCORTEX_PROJECT_ID=your-project-uuid \
-  -- uvx --from git+https://github.com/soluai-spa/solucortex-mcp solucortex-mcp
+  -- uvx solucortex-mcp
 ```
-
-(Once published to PyPI: replace the command with `uvx solucortex-mcp`.)
 
 ### Claude Desktop / Cursor / Cline (JSON config)
 
@@ -103,7 +101,7 @@ Add to the client's MCP config (`claude_desktop_config.json`, Cursor `mcp.json`,
   "mcpServers": {
     "solucortex": {
       "command": "uvx",
-      "args": ["--from", "git+https://github.com/soluai-spa/solucortex-mcp", "solucortex-mcp"],
+      "args": ["solucortex-mcp"],
       "env": {
         "SOLUCORTEX_API_KEY": "scx_xxx",
         "SOLUCORTEX_PROJECT_ID": "your-project-uuid"
