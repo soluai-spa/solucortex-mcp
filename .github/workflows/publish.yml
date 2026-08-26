@@ -9,7 +9,17 @@ on:
     types: [published]
 
 jobs:
+  test:
+    # Gate: nothing is published unless the full suite passes on this exact commit.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync
+      - run: uv run pytest -q
+
   build:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
