@@ -53,7 +53,35 @@ Never commit your API key. Keep it in your MCP client config's `env` block or a 
 
 ## Install
 
-### Claude Code
+### Remote (recommended — nothing to install)
+
+The hosted server at `https://mcp.solucortex.ai/mcp` speaks Streamable HTTP; your key
+travels with each request:
+
+```bash
+claude mcp add --transport http solucortex https://mcp.solucortex.ai/mcp \
+  --header "Authorization: Bearer scx_xxx" \
+  --header "X-Solucortex-Project: your-project-uuid"
+```
+
+Or in any client with remote MCP support:
+
+```json
+{
+  "mcpServers": {
+    "solucortex": {
+      "type": "http",
+      "url": "https://mcp.solucortex.ai/mcp",
+      "headers": {
+        "Authorization": "Bearer scx_xxx",
+        "X-Solucortex-Project": "your-project-uuid"
+      }
+    }
+  }
+}
+```
+
+### Claude Code (local, stdio)
 
 ```bash
 claude mcp add solucortex \
