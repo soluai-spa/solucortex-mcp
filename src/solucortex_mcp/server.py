@@ -5,17 +5,24 @@ Desktop, Cursor, Codex, Cline, ...) as tools: recall context at the start of a t
 record memories when it closes. The client acts as an *authorized agent* (Bearer api_key),
 so memories it creates are stored approved and traced automatically.
 
-Configuration (environment variables):
-  SOLUCORTEX_URL         Base URL. Default: https://solucortex.ai
-  SOLUCORTEX_API_KEY     Project API key (prefix scx_). REQUIRED.
-  SOLUCORTEX_PROJECT_ID  Default project UUID. Can be overridden per call.
+Transports:
+  stdio (default)  Local single-tenant mode. Credentials come from the environment:
+    SOLUCORTEX_URL         Base URL. Default: https://solucortex.ai
+    SOLUCORTEX_API_KEY     Project API key (prefix scx_). REQUIRED.
+    SOLUCORTEX_PROJECT_ID  Default project UUID. Can be overridden per call.
+  http (MCP_TRANSPORT=http or --http)  Remote multi-tenant mode (Streamable HTTP,
+    stateless) listening on $PORT (default 8080). Credentials travel with EACH request:
+    'Authorization: Bearer <api key>' and optional 'X-Solucortex-Project: <uuid>'.
+    Environment credentials are ignored in this mode. See http_app.py.
 
-Never hardcode the API key: it is read from the environment.
+Never hardcode the API key: it is read from the environment (stdio) or the request (http).
 """
 
 from __future__ import annotations
 
+import contextvars
 import os
+import sys
 from typing import Annotated, Any
 
 import httpx
@@ -30,26 +37,68 @@ OPENAI_TIMEOUT = 60.0
 mcp = FastMCP("solucortex")
 
 
+# --- Credential resolution ---------------------------------------------------
+# stdio mode (default): credentials come from the environment, set by the client config
+# or run.sh. http mode (remote, multi-tenant): credentials travel with each request and
+# are stashed in these context variables by the middleware in http_app.py; the
+# environment is ignored so one tenant can never inherit another tenant's credentials.
+
+_http_mode = False
+
+_request_api_key: contextvars.ContextVar[str | None] = contextvars.ContextVar(
+    "solucortex_request_api_key", default=None
+)
+_request_project_id: contextvars.ContextVar[str | None] = contextvars.ContextVar(
+    "solucortex_request_project_id", default=None
+)
+
+
+def enable_http_mode() -> None:
+    global _http_mode
+    _http_mode = True
+
+
 def _base_url() -> str:
     return os.environ.get("SOLUCORTEX_URL", DEFAULT_URL).rstrip("/")
 
 
 def _api_key() -> str | None:
+    if _http_mode:
+        return _request_api_key.get()
     return os.environ.get("SOLUCORTEX_API_KEY")
 
 
 def _resolve_project_id(project_id: str | None) -> str | None:
-    return project_id or os.environ.get("SOLUCORTEX_PROJECT_ID")
+    if project_id:
+        return project_id
+    if _http_mode:
+        return _request_project_id.get()
+    return os.environ.get("SOLUCORTEX_PROJECT_ID")
+
+
+def _missing_project_error() -> dict[str, Any]:
+    if _http_mode:
+        return {
+            "ok": False,
+            "error": "Missing project_id: pass it as an argument or send the "
+            "X-Solucortex-Project header with your default project UUID.",
+        }
+    return {"ok": False, "error": "Missing project_id (neither argument nor SOLUCORTEX_PROJECT_ID)."}
 
 
 def _config_error() -> str | None:
     """Return an actionable message if configuration is missing, else None."""
-    if not _api_key():
+    if _api_key():
+        return None
+    if _http_mode:
         return (
-            "Missing SOLUCORTEX_API_KEY. Set it in the MCP server environment with your "
-            "project API key (prefix scx_). Without it, memory cannot be read or written."
+            "Missing API key. Send your SoluCortex project API key on every request as "
+            "'Authorization: Bearer <api key>'."
         )
-    return None
+    return (
+        "Missing SOLUCORTEX_API_KEY. Set it in the MCP server environment with your "
+        "project API key (prefix scx_). Without it, memory cannot be read or written."
+    )
 
 
 async def _request(
@@ -135,7 +184,7 @@ async def solucortex_recall(
     semantic similarity + importance. Uses OpenAI embeddings (slower, 20 req/min)."""
     pid = _resolve_project_id(project_id)
     if not pid:
-        return {"ok": False, "error": "Missing project_id (neither argument nor SOLUCORTEX_PROJECT_ID)."}
+        return _missing_project_error()
     return await _request(
         "POST", "/context/build",
         json_body={"project_id": pid, "query": query},
@@ -164,7 +213,7 @@ async def solucortex_search(
     (20 req/min)."""
     pid = _resolve_project_id(project_id)
     if not pid:
-        return {"ok": False, "error": "Missing project_id (neither argument nor SOLUCORTEX_PROJECT_ID)."}
+        return _missing_project_error()
     return await _request(
         "POST", "/search/semantic",
         json_body={"project_id": pid, "query": query, "limit": limit},
@@ -213,7 +262,7 @@ async def solucortex_remember(
     with a redacted reference."""
     pid = _resolve_project_id(project_id)
     if not pid:
-        return {"ok": False, "error": "Missing project_id (neither argument nor SOLUCORTEX_PROJECT_ID)."}
+        return _missing_project_error()
     return await _request(
         "POST", "/memories",
         json_body={
@@ -251,8 +300,18 @@ async def solucortex_list_memories(
 
 
 def main() -> None:
-    """Console entry point: run the MCP server over stdio."""
-    mcp.run()
+    """Console entry point: stdio by default; MCP_TRANSPORT=http or --http for remote mode."""
+    transport = os.environ.get("MCP_TRANSPORT", "stdio").strip().lower()
+    if "--http" in sys.argv[1:]:
+        transport = "http"
+    if transport in {"http", "streamable-http", "streamable_http"}:
+        import uvicorn
+
+        from .http_app import build_http_app
+
+        uvicorn.run(build_http_app(), host="0.0.0.0", port=int(os.environ.get("PORT", "8080")))
+    else:
+        mcp.run()
 
 
 if __name__ == "__main__":

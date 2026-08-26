@@ -24,6 +24,8 @@ that matter before it works, and **remember** what it learns when it's done.
 
 ## Configuration
 
+### stdio mode (default, local)
+
 The server is configured entirely through environment variables:
 
 | Variable | Required | Description |
@@ -31,6 +33,20 @@ The server is configured entirely through environment variables:
 | `SOLUCORTEX_API_KEY` | ✅ | Project API key (`scx_…`) |
 | `SOLUCORTEX_PROJECT_ID` | recommended | Default project UUID (can be overridden per call) |
 | `SOLUCORTEX_URL` | optional | API base URL. Default `https://solucortex.ai` |
+
+### HTTP mode (remote, multi-tenant)
+
+Run with `MCP_TRANSPORT=http` (or `--http`) to serve Streamable HTTP on `$PORT`
+(default 8080) — the mode behind `https://mcp.solucortex.ai`. Credentials travel with
+**each request** and the environment is ignored:
+
+| Header | Required | Description |
+|--------|----------|-------------|
+| `Authorization: Bearer scx_…` | ✅ | The caller's project API key (401 without it) |
+| `X-Solucortex-Project` | recommended | Default project UUID for the session |
+
+`GET /healthz` responds without auth (for Cloud Run health checks). The MCP endpoint is
+`/mcp`, runs stateless, and shares nothing between requests/tenants.
 
 Never commit your API key. Keep it in your MCP client config's `env` block or a local `.env`
 (see [`.env.example`](.env.example)).
@@ -93,8 +109,9 @@ The server speaks MCP over **stdio**, so clients launch it as a subprocess (`-i`
 
 ```bash
 uv sync
-uv run solucortex-mcp            # run
-python -m py_compile src/solucortex_mcp/server.py   # quick syntax check
+uv run solucortex-mcp            # run (stdio)
+MCP_TRANSPORT=http uv run solucortex-mcp   # run (HTTP on :8080)
+uv run pytest                    # test suite
 npx @modelcontextprotocol/inspector uv run solucortex-mcp   # interactive test
 ```
 
