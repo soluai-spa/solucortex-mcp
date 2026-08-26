@@ -38,7 +38,35 @@ NORMAL_TIMEOUT = 30.0
 # Endpoints backed by OpenAI embeddings have a reduced rate limit (20 req/min) and are slower.
 OPENAI_TIMEOUT = 60.0
 
-mcp = FastMCP("solucortex")
+# Sent to every client on initialize: how to use SoluCortex correctly, so any agent
+# (ours or a customer's) follows the living-memory workflow without extra setup files.
+INSTRUCTIONS = """\
+SoluCortex is the project's living technical memory: approved decisions, conventions,
+risks, architecture and learnings, governed per project. Follow this workflow:
+
+1. START of a task: call `solucortex_recall` with a description of the task/module
+   BEFORE touching code. Treat the returned memories as current project truth — they
+   outrank older docs and your assumptions.
+2. DURING the task: call `solucortex_search` for specific questions (e.g. "how is
+   authentication implemented?") instead of re-deriving answers.
+3. CLOSE of a task: evaluate whether something reusable was learned. If so, call
+   `solucortex_remember` with the right `type`:
+   - architecture (how the system is built), decision (choice + why),
+     convention (rule to follow), risk (what can go wrong),
+     bug_history (bug + root cause + fix), tech_debt (known shortcut),
+     sensitive_module (handle with care + why), learning (reusable insight),
+     external_integration (third-party service behavior/gotchas).
+   Set `importance` 1-10 (8+ only for decisions/risks that shape future work).
+   Depending on the project's governance, a memory may be stored as pending until a
+   human approves it — that is expected, do not retry.
+
+Rules: never store secrets (tokens, passwords, .env values) in a memory — record
+location/type/severity and the action taken instead. Do not log or echo API keys.
+One memory per fact; prefer updating knowledge via a new, clearer memory over
+duplicating existing ones.
+"""
+
+mcp = FastMCP("solucortex", instructions=INSTRUCTIONS)
 
 # Structured backend-call log. Goes to stderr (safe in stdio mode, where stdout carries
 # the MCP protocol) and is captured as structured output by Cloud Run in http mode.
