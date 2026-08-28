@@ -136,6 +136,16 @@ cp .env.example .env   # fill in your key
 
 ### Docker
 
+Prebuilt image on GHCR:
+
+```bash
+docker run --rm -i \
+  -e SOLUCORTEX_API_KEY=scx_xxx \
+  ghcr.io/soluai-spa/solucortex-mcp:latest
+```
+
+Or build it yourself:
+
 ```bash
 docker build -t solucortex-mcp .
 docker run --rm -i \
