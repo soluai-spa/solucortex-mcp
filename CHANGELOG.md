@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.1 — 2026-09-07
+
+- Remote mode: anonymous `initialize`, `ping` and `tools/list` are now allowed (directory
+  health probes and client introspection). Tool calls still require the Bearer key.
+
 ## 1.1.0 — 2026-09-07
 
 Governed memory lifecycle — agents propose, humans govern.

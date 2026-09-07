@@ -71,6 +71,46 @@ async def _send_json(
     await send({"type": "http.response.body", "body": body})
 
 
+ANONYMOUS_METHODS = {"initialize", "notifications/initialized", "ping", "tools/list"}
+
+
+async def _peek_body(receive: Receive):
+    """Read the request body once and return (body, replayable_receive)."""
+    chunks: list[bytes] = []
+    while True:
+        message = await receive()
+        chunks.append(message.get("body", b""))
+        if not message.get("more_body"):
+            break
+    body = b"".join(chunks)
+
+    sent = False
+
+    async def replay() -> Message:
+        nonlocal sent
+        if sent:
+            # Body already replayed: delegate to the real channel so the server can
+            # keep streaming (SSE) until the client actually disconnects.
+            return await receive()
+        sent = True
+        return {"type": "http.request", "body": body, "more_body": False}
+
+    return body, replay
+
+
+def _is_anonymous_allowed(body: bytes) -> bool:
+    try:
+        payload = json.loads(body)
+    except (ValueError, UnicodeDecodeError):
+        return False
+    messages = payload if isinstance(payload, list) else [payload]
+    if not messages:
+        return False
+    return all(
+        isinstance(m, dict) and m.get("method") in ANONYMOUS_METHODS for m in messages
+    )
+
+
 class CredentialsMiddleware:
     """Pure ASGI middleware: health bypass, 401 without a Bearer key, 413 over the body
     limit, per-request credentials, and one JSON access-log line per request.
@@ -132,6 +172,17 @@ class CredentialsMiddleware:
             return
 
         if not api_key:
+            # Anonymous handshake/introspection is allowed (directory probers, curious
+            # clients): initialize, the initialized notification, ping and tools/list
+            # carry no tenant data. Everything else still requires the Bearer key —
+            # and tool calls without one fail at the backend anyway.
+            body, receive = await _peek_body(receive)
+            if _is_anonymous_allowed(body):
+                try:
+                    await self.app(scope, receive, counting_send)
+                finally:
+                    _log({"anonymous": True})
+                return
             status_holder["status"] = 401
             await _send_json(
                 send,

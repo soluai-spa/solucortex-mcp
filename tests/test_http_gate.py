@@ -55,3 +55,25 @@ def test_mcp_endpoint_with_key_passes_the_gate(http_server):
         headers={"Authorization": "Bearer scx_test", "Accept": "application/json, text/event-stream"},
     )
     assert resp.status_code != 401
+
+
+def test_anonymous_initialize_is_allowed(http_server):
+    # Directory probers (e.g. Glama health checks) do an unauthenticated handshake.
+    resp = httpx.post(
+        f"{http_server}/mcp",
+        json={"jsonrpc": "2.0", "id": 1, "method": "initialize",
+              "params": {"protocolVersion": "2025-03-26", "capabilities": {},
+                         "clientInfo": {"name": "probe", "version": "0"}}},
+        headers={"Accept": "application/json, text/event-stream"},
+    )
+    assert resp.status_code == 200
+
+
+def test_anonymous_tool_call_is_still_401(http_server):
+    resp = httpx.post(
+        f"{http_server}/mcp",
+        json={"jsonrpc": "2.0", "id": 2, "method": "tools/call",
+              "params": {"name": "solucortex_list_memories", "arguments": {}}},
+        headers={"Accept": "application/json, text/event-stream"},
+    )
+    assert resp.status_code == 401
