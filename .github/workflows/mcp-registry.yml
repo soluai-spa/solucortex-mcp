@@ -26,3 +26,5 @@ jobs:
         run: mcp-publisher login github-oidc
       - name: Publish
         run: mcp-publisher publish
+
+# Re-run note: registry validates the PyPI version, so publish AFTER PyPI has it.
