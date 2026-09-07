@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.2 — 2026-09-07
+
+- Remote mode: full anonymous introspection (`resources/list`, `prompts/list`,
+  `resources/templates/list`) and bodyless methods (GET/HEAD/OPTIONS/DELETE) no longer
+   401 — directory health checks and inspectors connect cleanly. Tool calls still
+  require the Bearer key.
+
 ## 1.1.1 — 2026-09-07
 
 - Remote mode: anonymous `initialize`, `ping` and `tools/list` are now allowed (directory

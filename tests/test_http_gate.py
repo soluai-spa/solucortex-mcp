@@ -77,3 +77,22 @@ def test_anonymous_tool_call_is_still_401(http_server):
         headers={"Accept": "application/json, text/event-stream"},
     )
     assert resp.status_code == 401
+
+
+def test_anonymous_introspection_methods_are_allowed(http_server):
+    for method in ("resources/list", "prompts/list"):
+        resp = httpx.post(
+            f"{http_server}/mcp",
+            json={"jsonrpc": "2.0", "id": 1, "method": method, "params": {}},
+            headers={"Accept": "application/json, text/event-stream"},
+        )
+        assert resp.status_code != 401, method
+
+
+def test_anonymous_get_passes_through_to_transport(http_server):
+    # SSE listen stream / probes: never a 401. The transport may hold the stream open,
+    # so read only the status line without consuming the body.
+    with httpx.stream(
+        "GET", f"{http_server}/mcp", headers={"Accept": "text/event-stream"}, timeout=5
+    ) as resp:
+        assert resp.status_code != 401

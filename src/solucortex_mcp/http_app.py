@@ -71,7 +71,15 @@ async def _send_json(
     await send({"type": "http.response.body", "body": body})
 
 
-ANONYMOUS_METHODS = {"initialize", "notifications/initialized", "ping", "tools/list"}
+ANONYMOUS_METHODS = {
+    "initialize",
+    "notifications/initialized",
+    "ping",
+    "tools/list",
+    "resources/list",
+    "resources/templates/list",
+    "prompts/list",
+}
 
 
 async def _peek_body(receive: Receive):
@@ -169,6 +177,13 @@ class CredentialsMiddleware:
                 send, 413, {"error": f"Payload too large (max {MAX_BODY_BYTES} bytes)."}
             )
             _log({"reason": "payload_too_large", "content_length": content_length})
+            return
+
+        if not api_key and scope.get("method") in ("GET", "HEAD", "OPTIONS", "DELETE"):
+            try:
+                await self.app(scope, receive, counting_send)
+            finally:
+                _log({"anonymous": True})
             return
 
         if not api_key:
