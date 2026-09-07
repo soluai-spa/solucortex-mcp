@@ -15,6 +15,8 @@ EXPECTED_TOOLS = {
     "solucortex_recall",
     "solucortex_search",
     "solucortex_remember",
+    "solucortex_update_memory",
+    "solucortex_flag_memory",
     "solucortex_list_memories",
 }
 

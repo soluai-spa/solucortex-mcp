@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.1.0 — 2026-09-07
+
+Governed memory lifecycle — agents propose, humans govern.
+
+- New tool `solucortex_update_memory`: correct content/title/importance/type of an
+  existing memory. The edit is applied but the memory returns to **pending** until a
+  human re-approves it in the SoluCortex panel; agents cannot change `status`.
+- New tool `solucortex_flag_memory`: mark a memory as outdated/incorrect with a
+  required reason (optionally suggesting archive/delete). It lands in the human
+  review queue; nothing is unpublished or deleted by the agent.
+- Deletion remains human-only by design (documented in README and in the server's
+  MCP instructions).
+- Instructions updated: the full recall → work → remember/update/flag loop.
+
 ## 1.0.0 — 2026-08-26
 
 First public release.

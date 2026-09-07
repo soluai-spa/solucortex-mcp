@@ -60,10 +60,18 @@ risks, architecture and learnings, governed per project. Follow this workflow:
    Depending on the project's governance, a memory may be stored as pending until a
    human approves it — that is expected, do not retry.
 
+Corrections and lifecycle (agents propose, humans govern):
+- To fix or improve an existing memory, call `solucortex_update_memory`. The edit is
+  applied but the memory returns to PENDING: always tell the user they must review
+  and approve the change in the SoluCortex panel (https://solucortex.ai).
+- If a memory looks outdated, wrong or duplicated, call `solucortex_flag_memory` with
+  a clear reason (optionally suggesting archive/delete). A human decides in the panel.
+- Agents can never approve, reject or delete memories — deletion is human-only by design.
+
 Rules: never store secrets (tokens, passwords, .env values) in a memory — record
 location/type/severity and the action taken instead. Do not log or echo API keys.
-One memory per fact; prefer updating knowledge via a new, clearer memory over
-duplicating existing ones.
+One memory per fact; for small corrections prefer `solucortex_update_memory` over
+creating a near-duplicate.
 """
 
 mcp = FastMCP("solucortex", instructions=INSTRUCTIONS)
@@ -312,6 +320,87 @@ async def solucortex_remember(
     if pid := _resolve_project_id(project_id):
         body["project_id"] = pid  # else the backend infers it from the API key
     return await _request("POST", "/memories", json_body=body)
+
+
+@mcp.tool(
+    annotations={
+        "title": "SoluCortex: update a memory (requires human re-approval)",
+        "readOnlyHint": False,
+        "destructiveHint": False,
+        "idempotentHint": False,
+        "openWorldHint": True,
+    }
+)
+async def solucortex_update_memory(
+    memory_id: Annotated[str, Field(description="UUID of the memory to correct.")],
+    content: Annotated[str | None, Field(description="Corrected full content.")] = None,
+    title: Annotated[str | None, Field(description="Corrected title.", max_length=120)] = None,
+    importance: Annotated[
+        int | None, Field(description="Corrected priority 1-10.", ge=1, le=10)
+    ] = None,
+    type: Annotated[
+        str | None,
+        Field(description="Corrected memory type (one of the 9 canonical types)."),
+    ] = None,
+) -> dict[str, Any]:
+    """Correct an existing memory (PATCH /memories/{id}).
+
+    Agents propose, humans govern: the edit is applied but the memory returns to
+    PENDING until a human re-approves it. ALWAYS tell the user the change awaits
+    their approval in the SoluCortex panel. Status changes are not possible here."""
+    body = {
+        k: v
+        for k, v in {"content": content, "title": title, "importance": importance, "type": type}.items()
+        if v is not None
+    }
+    if not body:
+        return {"ok": False, "error": "Nothing to update: pass at least one of content/title/importance/type."}
+    result = await _request("PATCH", f"/memories/{memory_id}", json_body=body)
+    if result.get("ok"):
+        result["action_required"] = (
+            "Edit saved as PENDING. Tell the user to review and approve this change "
+            "in the SoluCortex panel (https://solucortex.ai) — until then the memory "
+            "is out of the approved pool."
+        )
+    return result
+
+
+@mcp.tool(
+    annotations={
+        "title": "SoluCortex: flag a memory for human review",
+        "readOnlyHint": False,
+        "destructiveHint": False,
+        "idempotentHint": True,
+        "openWorldHint": True,
+    }
+)
+async def solucortex_flag_memory(
+    memory_id: Annotated[str, Field(description="UUID of the memory to flag.")],
+    reason: Annotated[
+        str,
+        Field(description="Why it needs review: outdated, incorrect, duplicated... (10-500 chars).",
+              min_length=10, max_length=500),
+    ],
+    suggested_action: Annotated[
+        str,
+        Field(description="What you suggest the human does: update, archive, delete or review."),
+    ] = "review",
+) -> dict[str, Any]:
+    """Flag a memory as outdated/incorrect (POST /memories/{id}/flag).
+
+    The memory is marked for human review in the SoluCortex panel; nothing is
+    deleted or unpublished. ALWAYS tell the user a memory awaits their decision
+    in the panel. Deletion is human-only by design."""
+    result = await _request(
+        "POST", f"/memories/{memory_id}/flag",
+        json_body={"reason": reason, "suggested_action": suggested_action},
+    )
+    if result.get("ok"):
+        result["action_required"] = (
+            "Memory flagged for review. Tell the user to resolve it (update, archive "
+            "or delete) in the SoluCortex panel (https://solucortex.ai)."
+        )
+    return result
 
 
 @mcp.tool(

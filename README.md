@@ -29,7 +29,13 @@ that matter before it works, and **remember** what it learns when it's done.
 | `solucortex_recall` | Builds living context for a task (ranked by semantic similarity + importance) | At the **start** of a task, before touching code |
 | `solucortex_search` | Ad-hoc semantic search over the project's memories | Specific questions mid-task |
 | `solucortex_remember` | Records a memory (stored `approved` + traced as an authorized agent) | At **close**, or on a relevant technical decision |
+| `solucortex_update_memory` | Corrects an existing memory — the edit returns it to **pending** for human re-approval in the panel | When a memory is right in spirit but wrong in detail |
+| `solucortex_flag_memory` | Flags a memory as outdated/incorrect with a reason; a human resolves it in the panel | When a memory should be reviewed, archived or deleted |
 | `solucortex_list_memories` | Lists memories without semantic search | Quick inspection / audit |
+
+> **Governance by design:** agents propose, humans govern. Agents can never change a
+> memory's `status`, rewrite its metadata, or delete it — edits go back to pending and
+> deletions only happen from the SoluCortex panel.
 
 ## Requirements
 
