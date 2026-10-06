@@ -162,6 +162,14 @@ docker run --rm -i \
 
 The server speaks MCP over **stdio**, so clients launch it as a subprocess (`-i` keeps stdin open).
 
+### Instructions for your agent (AGENTS.md)
+
+Once connected, give your agent the methodology too: copy
+[`templates/AGENTS.md`](templates/AGENTS.md) into the root of your repo (it works as
+`AGENTS.md` or `CLAUDE.md`). The MCP handshake already carries these instructions — the
+file lets you version them alongside your code, extend them with your own conventions,
+and optionally enable the commented Claude Code hook recipe for guaranteed recall.
+
 ## Development
 
 ```bash
