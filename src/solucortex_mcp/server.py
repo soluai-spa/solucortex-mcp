@@ -46,7 +46,14 @@ risks, architecture and learnings, governed per project. Follow this workflow:
 
 1. START of a task: call `solucortex_recall` with a description of the task/module
    BEFORE touching code. Treat the returned memories as current project truth — they
-   outrank older docs and your assumptions.
+   outrank older docs and your assumptions. BUT recall is a PARTIAL SELECTION (top-N by
+   relevance), not "everything": it may silently omit eligible memories. The response
+   declares the shape of the cut — `total_available_por_tipo` (full eligible pool per
+   type) vs. how many were included, plus the boundary scores — and the context_text
+   footer states it in prose. When a type is cut arbitrarily (many available, few
+   included), do NOT assume you read it all: either run a second, targeted query for that
+   type, or explicitly declare how many you read of the total ("read N/M convention;
+   context may be missing").
 2. DURING the task: call `solucortex_search` for specific questions (e.g. "how is
    authentication implemented?") instead of re-deriving answers.
 3. CLOSE of a task: evaluate whether something reusable was learned. If so, call
@@ -240,7 +247,18 @@ async def solucortex_recall(
 
     Call this at the START of a task, before touching code: returns approved, active
     memories (decisions, conventions, risks, sensitive modules, architecture) ranked by
-    semantic similarity + importance. Uses OpenAI embeddings (slower, 20 req/min)."""
+    semantic similarity + importance. Uses OpenAI embeddings (slower, 20 req/min).
+
+    PARTIAL SELECTION — recall may be a partial selection, not "everything". It returns
+    the top-N most relevant memories, so it can leave eligible memories out silently.
+    The response now declares the SHAPE of that cut: `total_available_por_tipo` (the full
+    eligible pool per type), `incluidas_por_tipo` (how many of each type were included),
+    and the boundary scores `score_last_included`/`score_first_excluded`; the context_text
+    footer says it in prose (e.g. "convention 6/42, risk 2/8"). RULE for the agent when a
+    type is cut arbitrarily (many available, few included): do NOT assume you read
+    everything — either issue a second, targeted query for that type (e.g. pass a query
+    focused on it), or explicitly declare how many you read of the total ("read N/M
+    convention; context may be missing")."""
     body: dict[str, Any] = {"query": query}
     if pid := _resolve_project_id(project_id):
         body["project_id"] = pid  # else the backend infers it from the API key
